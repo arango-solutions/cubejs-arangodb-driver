@@ -1,0 +1,24 @@
+cubes:
+  - name: customers
+    sql_table: '"Customer"'
+
+    measures:
+      - name: count
+        type: count
+        sql: "{CUBE}.code"
+
+    dimensions:
+      - name: code
+        sql: "{CUBE}.code"
+        type: string
+        primary_key: true
+
+      - name: name
+        sql: "{CUBE}.name"
+        type: string
+
+      # ArangoDB attribute names are case-sensitive. Like PostgreSQL, an unquoted
+      # identifier folds to lowercase, so the camelCase attribute must be quoted.
+      - name: country
+        sql: '{CUBE}."countryOfDestination"'
+        type: string

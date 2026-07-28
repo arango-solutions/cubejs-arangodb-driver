@@ -2,41 +2,55 @@
   "name": "arangodb-cubejs-driver",
   "description": "Cube.js arangodb driver",
   "author": "pnthanh",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/panoti/cubejs-arangodb-driver.git"
   },
   "engines": {
-    "node": "^12.0.0 || ^14.0.0 || >=16.0.0"
+    "node": ">=20.0.0"
   },
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "scripts": {
-    "prebuild": "rimraf dist",
+    "prebuild": "rimraf dist tsconfig.tsbuildinfo",
     "build": "tsc",
-    "lint": "eslint src/* test/* --ext .ts,.js",
-    "lint:fix": "eslint --fix src/* test/* --ext .ts,.js",
+    "lint": "eslint src test --ext .ts,.js",
+    "lint:fix": "eslint --fix src test --ext .ts,.js",
     "test": "jest",
-    "test:integration": "jest --config ./test/jest-intergration.json"
+    "test:integration": "jest --config ./test/jest-integration.json",
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:all": "npm run test && npm run test:integration && npm run test:e2e"
   },
   "files": [
     "dist"
   ],
   "dependencies": {
-    "@cubejs-backend/base-driver": "^0.33.41",
-    "arangojs": "^8.4.0",
-    "pgsql-ast-parser": "^11.1.0"
+    "@cubejs-backend/base-driver": "^1.4.4",
+    "arangojs": "^10.3.1",
+    "pgsql-ast-parser": "^12.0.2"
+  },
+  "peerDependencies": {
+    "@cubejs-backend/schema-compiler": "^1.4.4"
+  },
+  "peerDependenciesMeta": {
+    "@cubejs-backend/schema-compiler": {
+      "optional": true
+    }
   },
   "license": "MIT",
   "devDependencies": {
-    "@cubejs-backend/linter": "^0.33.0",
-    "@types/jest": "^29.5.3",
-    "jest": "^29.6.2",
-    "rimraf": "^5.0.1",
-    "testcontainers": "^9.12.0",
-    "ts-jest": "^29.1.1",
-    "typescript": "~4.9.5"
+    "@cubejs-backend/linter": "^1.4.4",
+    "@cubejs-backend/schema-compiler": "^1.4.4",
+    "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "jest": "^30.4.2",
+    "jsonwebtoken": "^9.0.2",
+    "rimraf": "^6.1.3",
+    "testcontainers": "^12.0.4",
+    "ts-jest": "^29.4.12",
+    "typescript": "~5.9.3"
   },
   "eslintConfig": {
     "extends": "./node_modules/@cubejs-backend/linter/index.js"

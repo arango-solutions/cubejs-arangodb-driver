@@ -1,4 +1,5 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
+# This workflow builds and tests the package and then publishes it to npm when a
+# version tag is pushed.
 # For more information see: https://help.github.com/actions/language-and-framework-guides/publishing-nodejs-packages
 
 name: Release CI
@@ -6,100 +7,33 @@ name: Release CI
 on:
   push:
     tags: "v*"
-#     branches: [ "main" ]
-#     paths:
-#       - src/**
-#       - test/**
-#       - package.json
-#       - tsconfig.base.json
-#       - tsconfig.json
 
 env:
-  NODE_VERSION: "16.x"
+  NODE_VERSION: "22.x"
 
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # Required for npm provenance (id-token) and GitHub release creation.
+      id-token: write
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: https://registry.npmjs.org/
       - run: npm ci
+      - run: npm run lint
       - run: npm run build
-      - run: npm publish
+      - run: npm test
+      - run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
       - run: |
           VERSION=${GITHUB_REF/refs\/tags\//}
-          gh release create "${VERSION}" -t "${VERSION}"
+          gh release create "${VERSION}" -t "${VERSION}" --generate-notes
           gh release view "${VERSION}"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-#   publish-gpr:
-#     runs-on: ubuntu-latest
-#     permissions:
-#       contents: read
-#       packages: write
-#     steps:
-#       - uses: actions/checkout@v3
-#       - uses: actions/setup-node@v3
-#         with:
-#           node-version: ${{ env.NODE_VERSION }}
-#           registry-url: https://npm.pkg.github.com/
-#       - run: npm ci
-#       - run: npm run build
-#       - run: npm publish
-#         env:
-#           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-#   publish-docker:
-#     needs: publish-npm
-#     runs-on: ubuntu-latest
-#     permissions:
-#       contents: read
-#       packages: write
-#       # This is used to complete the identity challenge
-#       # with sigstore/fulcio when running outside of PRs.
-#       id-token: write
-
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v3
-
-#       # Workaround: https://github.com/docker/build-push-action/issues/461
-#       - name: Setup Docker buildx
-#         uses: docker/setup-buildx-action@v2
-
-#       # Login against a Docker registry except on PR
-#       # https://github.com/docker/login-action
-#       - name: Log into registry ${{ env.REGISTRY }}
-#         if: github.event_name != 'pull_request'
-#         uses: docker/login-action@v2
-#         with:
-#           registry: ${{ env.REGISTRY }}
-#           username: ${{ github.actor }}
-#           password: ${{ secrets.GITHUB_TOKEN }}
-
-#       # Extract metadata (tags, labels) for Docker
-#       # https://github.com/docker/metadata-action
-#       - name: Extract Docker metadata
-#         id: meta
-#         uses: docker/metadata-action@v4
-#         with:
-#           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-#           tags: |
-#             type=ref,event=branch
-#             type=sha,enable=false
-#       # Build and push Docker image with Buildx (don't push on PR)
-#       # https://github.com/docker/build-push-action
-#       - name: Build and push Docker image
-#         id: build-and-push
-#         uses: docker/build-push-action@v3
-#         with:
-#           context: ./docker
-#           push: ${{ github.event_name != 'pull_request' }}
-#           tags: ${{ steps.meta.outputs.tags }}
-#           labels: ${{ steps.meta.outputs.labels }}

@@ -40,17 +40,17 @@ FOR doc IN Customer
   RETURN {customer__country_of_destination,customer__count}`,
   `
 FOR doc IN Order
-  FILTER doc.id == '1'
+  FILTER doc.id == @p0
   RETURN doc
 `,
   `
 FOR doc IN Order
-  FILTER doc.amount > 2000
+  FILTER doc.amount > @p0
   RETURN doc
 `,
   `
 FOR doc IN Order
-  FILTER doc.amount > 2000
+  FILTER doc.amount > @p0
   RETURN doc
 `,
   `
@@ -60,20 +60,30 @@ FOR doc IN Order
 `,
   `
 FOR doc IN Order
-  FILTER doc.id LIKE '%abc%'
+  FILTER doc.id LIKE @p0
   RETURN doc
 `,
   `
 FOR doc IN Order
-  FILTER doc.id LIKE CONCAT(CONCAT('%', 'abc'), '%')
+  FILTER doc.id LIKE CONCAT(CONCAT(@p0, @p1), @p2)
   RETURN doc
 `,
 ];
 
-describe('sql-untils', () => {
-  beforeEach(async () => {
-  });
+const bindVarsList: Record<string, any>[] = [
+  {},
+  {},
+  {},
+  {},
+  { p0: '1' },
+  { p0: 2000 },
+  { p0: 2000 },
+  {},
+  { p0: '%abc%' },
+  { p0: '%', p1: 'abc', p2: '%' },
+];
 
+describe('sql-untils', () => {
   it('Integer Literals', () => {
     const testCases = [
       { value: '-10', expectation: true },
@@ -126,8 +136,8 @@ describe('sql-untils', () => {
       { value: Number.POSITIVE_INFINITY, expectation: false },
       { value: Number.NEGATIVE_INFINITY, expectation: false },
       { value: new Date(2009, 1, 1), expectation: false },
-      { value: new Object(), expectation: false },
-      { value: function () { }, expectation: false },
+      { value: {}, expectation: false },
+      { value: () => undefined, expectation: false },
       { value: [], expectation: false },
       { value: ['-10'], expectation: false },
       { value: ['0'], expectation: false },
@@ -150,60 +160,73 @@ describe('sql-untils', () => {
   });
 
   it(sqls[0], () => {
-    let aql = sql2aql(sqls[0]);
-    // expect(typeof aql).toBe('string');
-    expect(aql).toEqual(aqls[0].trim());
+    const aql = sql2aql(sqls[0]);
+    expect(aql.query).toEqual(aqls[0].trim());
+    expect(aql.bindVars).toEqual(bindVarsList[0]);
   });
 
   it(sqls[1], () => {
-    let aql = sql2aql(sqls[1]);
-    expect(aql).toEqual(aqls[1].trim());
+    const aql = sql2aql(sqls[1]);
+    expect(aql.query).toEqual(aqls[1].trim());
+    expect(aql.bindVars).toEqual(bindVarsList[1]);
   });
 
   it(sqls[2], () => {
-    let aql = sql2aql(sqls[2]);
-    expect(aql).toEqual(aqls[2].trim());
+    const aql = sql2aql(sqls[2]);
+    expect(aql.query).toEqual(aqls[2].trim());
+    expect(aql.bindVars).toEqual(bindVarsList[2]);
   });
 
   it(sqls[3], () => {
-    let aql = sql2aql(sqls[3]);
-    // console.log(aql);
-    expect(aql).toEqual(aqls[3].trim());
+    const aql = sql2aql(sqls[3]);
+    expect(aql.query).toEqual(aqls[3].trim());
+    expect(aql.bindVars).toEqual(bindVarsList[3]);
   });
 
   it(sqls[4], () => {
-    let aql = sql2aql(sqls[4]);
-    // console.log(aql);
-    expect(aql).toEqual(aqls[4].trim());
+    const aql = sql2aql(sqls[4]);
+    expect(aql.query).toEqual(aqls[4].trim());
+    expect(aql.bindVars).toEqual(bindVarsList[4]);
   });
 
   it(sqls[5], () => {
-    let aql = sql2aql(sqls[5]);
-    // console.log(aql);
-    expect(aql).toEqual(aqls[5].trim());
+    const aql = sql2aql(sqls[5]);
+    expect(aql.query).toEqual(aqls[5].trim());
+    expect(aql.bindVars).toEqual(bindVarsList[5]);
   });
 
   it(sqls[6], () => {
-    let aql = sql2aql(sqls[6], [2000]);
-    // console.log(aql);
-    expect(aql).toEqual(aqls[6].trim());
+    const aql = sql2aql(sqls[6], [2000]);
+    expect(aql.query).toEqual(aqls[6].trim());
+    expect(aql.bindVars).toEqual(bindVarsList[6]);
   });
 
   it(sqls[7], () => {
-    let aql = sql2aql(sqls[7]);
-    // console.log(aql);
-    expect(aql).toEqual(aqls[7].trim());
+    const aql = sql2aql(sqls[7]);
+    expect(aql.query).toEqual(aqls[7].trim());
+    expect(aql.bindVars).toEqual(bindVarsList[7]);
   });
 
   it(sqls[8], () => {
-    let aql = sql2aql(sqls[8]);
-    // console.log(aql);
-    expect(aql).toEqual(aqls[8].trim());
+    const aql = sql2aql(sqls[8]);
+    expect(aql.query).toEqual(aqls[8].trim());
+    expect(aql.bindVars).toEqual(bindVarsList[8]);
   });
 
   it(sqls[9], () => {
-    let aql = sql2aql(sqls[9], ['abc']);
-    // console.log(aql);
-    expect(aql).toEqual(aqls[9].trim());
+    const aql = sql2aql(sqls[9], ['abc']);
+    expect(aql.query).toEqual(aqls[9].trim());
+    expect(aql.bindVars).toEqual(bindVarsList[9]);
+  });
+
+  it('binds string values instead of interpolating them (injection safety)', () => {
+    const aql = sql2aql(`SELECT * FROM "Order" WHERE id = $1`, [`x' || REMOVE doc IN Order || '`]);
+    expect(aql.query).toEqual(`FOR doc IN Order\n  FILTER doc.id == @p0\n  RETURN doc`);
+    expect(aql.bindVars).toEqual({ p0: `x' || REMOVE doc IN Order || '` });
+  });
+
+  it('supports LIMIT with OFFSET', () => {
+    const aql = sql2aql(`SELECT * FROM "Order" LIMIT 10 OFFSET 5`);
+    expect(aql.query).toContain('LIMIT 5,10');
   });
 });
